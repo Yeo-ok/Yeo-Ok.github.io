@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>역 회귀 분석 도구</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f7f9;
+      color: #333;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    h1, h2 {
+      color: #2c3e50;
+      text-align: center;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #dcdcdc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #3498db;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .output {
+      margin-top: 30px;
+    }
+
+    #inverse_output {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    #inverse_output li {
+      background: #ecf0f1;
+      margin-bottom: 8px;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>역 회귀분석 도구</h1>
+    <div class="input-group">
+      <label for="target_tube1">목표 1번 튜브 유량 (mL):</label>
+      <input type="number" step="0.001" id="target_tube1" placeholder="예: 1.500" />
+    </div>
+    <div class="input-group">
+      <label for="target_tube2">목표 2번 튜브 유량 (mL):</label>
+      <input type="number" step="0.001" id="target_tube2" placeholder="예: 1.200" />
+    </div>
+    <button onclick="runInverseRegression()">가능한 튜브 속도 찾기</button>
+
+    <div class="output">
+      <h2>예상 가능한 튜브 속도</h2>
+      <ul id="inverse_output"></ul>
+    </div>
+
+    <button class="button" onclick="location.href='index.html'">처음으로</button>
+
+  </div>
+
+  <script>
+    // 예시 데이터
+    const tenSecMappData = [
+  [100, 60, 1.283, 0.014, 1.105],
+  [100, 60, 1.300, 0.016, 1.124],
+  [100, 60, 1.294, 0.041, 1.101],
+  [100, 80, 0.960, 0.291, 1.033],
+  [100, 80, 0.960, 0.280, 1.039],
+  [100, 80, 0.953, 0.280, 1.036],
+  [100, 100, 0.683, 0.693, 1.153],
+  [100, 100, 0.679, 0.675, 1.157],
+  [100, 100, 0.671, 0.685, 1.164],
+  [100, 120, 0.508, 1.082, 1.386],
+  [100, 120, 0.492, 1.085, 1.377],
+  [100, 120, 0.495, 1.098, 1.388],
+  [100, 140, 0.322, 1.466, 1.594],
+  [100, 140, 0.327, 1.438, 1.576],
+  [100, 140, 0.328, 1.470, 1.587],
+  [150, 100, 1.637, 0.146, 1.557],
+  [150, 100, 1.679, 0.144, 1.571],
+  [150, 100, 1.687, 0.136, 1.587],
+  [150, 150, 0.910, 0.896, 1.611],
+  [150, 150, 0.918, 0.905, 1.618],
+  [150, 150, 0.919, 0.904, 1.610],
+  [150, 200, 0.486, 1.769, 2.060],
+  [150, 200, 0.487, 1.794, 2.085],
+  [150, 200, 0.487, 1.791, 2.071],
+  [200, 150, 1.749, 0.360, 1.898],
+  [200, 150, 1.761, 0.354, 1.907],
+  [200, 150, 1.771, 0.358, 1.918],
+  [200, 200, 1.139, 1.118, 2.045],
+  [200, 200, 1.149, 1.132, 2.061],
+  [200, 200, 1.154, 1.123, 2.066],
+  [200, 250, 0.721, 1.921, 2.445],
+  [200, 250, 0.744, 1.904, 2.431],
+  [200, 250, 0.728, 1.929, 2.440],
+  [250, 200, 1.952, 0.572, 2.314],
+  [250, 200, 1.932, 0.580, 2.312],
+  [250, 200, 1.942, 0.586, 2.314],
+  [250, 250, 1.374, 1.277, 2.461],
+  [250, 250, 1.404, 1.290, 2.480],
+  [250, 250, 1.381, 1.300, 2.474],
+  [250, 300, 0.981, 2.024, 2.801],
+  [250, 300, 0.952, 2.045, 2.784],
+  [250, 300, 0.981, 2.050, 2.810],
+  [300, 250, 2.095, 0.785, 2.693],
+  [300, 250, 2.119, 0.795, 2.702],
+  [300, 250, 2.128, 0.783, 2.715],
+  [300, 300, 1.598, 1.454, 2.854],
+  [300, 300, 1.596, 1.463, 2.859],
+  [300, 300, 1.570, 1.465, 2.835],
+  [300, 350, 1.142, 2.159, 3.103],
+  [300, 350, 1.149, 2.158, 3.109],
+  [300, 350, 1.146, 2.174, 3.119],
+  [350, 300, 2.254, 0.957, 3.008],
+  [350, 300, 2.278, 0.965, 3.025],
+  [350, 300, 2.239, 0.971, 3.022],
+  [350, 350, 1.744, 1.596, 3.164],
+  [350, 350, 1.752, 1.614, 3.166],
+  [350, 350, 1.747, 1.619, 3.173],
+  [350, 400, 1.351, 2.283, 3.436],
+  [350, 400, 1.356, 2.296, 3.435],
+  [350, 400, 1.350, 2.291, 3.439],
+  [400, 350, 2.423, 1.165, 3.363],
+  [400, 350, 2.423, 1.146, 3.352],
+  [400, 350, 2.403, 1.160, 3.386],
+  [400, 350, 2.382, 1.167, 3.359],
+  [400, 400, 1.934, 1.774, 3.517],
+  [400, 400, 1.937, 1.783, 3.518],
+  [400, 400, 1.951, 1.790, 3.537],
+  [400, 450, 1.528, 2.417, 3.749],
+  [400, 450, 1.535, 2.443, 3.781],
+  [400, 450, 1.549, 2.455, 3.792],
+  [450, 400, 2.617, 1.323, 3.714],
+  [450, 400, 2.594, 1.335, 3.729],
+  [450, 400, 2.601, 1.340, 3.735],
+  [450, 450, 2.146, 1.929, 3.874],
+  [450, 450, 2.146, 1.935, 3.887],
+  [450, 450, 2.144, 1.935, 3.872],
+  [225, 325, 0.492, 2.701, 2.964],
+  [225, 325, 0.476, 2.731, 2.992],
+  [125, 125, 0.801, 0.824, 1.395],
+  [175, 175, 1.063, 1.012, 1.853],
+  [225, 225, 1.242, 1.221, 2.268],
+  [275, 275, 1.475, 1.398, 2.638],
+  [325, 325, 1.649, 1.55, 2.997],
+  [375, 375, 1.844, 1.714, 3.382],
+  [425, 425, 2.027, 1.893, 3.711],
+  [228, 320, 0.542, 2.571, 2.885],
+  [228, 320, 0.559, 2.544, 2.88],
+  [228, 320, 0.535, 2.551, 2.875]
+];
+
+    function transformPoly(X) {
+      return X.map(([x1, x2]) => [
+        1,
+        x1, x2,
+        x1 ** 2, x1 * x2, x2 ** 2
+      ]);
+    }
+
+    function transpose(matrix) {
+      return matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]));
+    }
+
+    function multiply(a, b) {
+      const result = Array(a.length).fill(null).map(() => Array(b[0].length).fill(0));
+      for (let i = 0; i < a.length; i++) {
+        for (let j = 0; j < b[0].length; j++) {
+          for (let k = 0; k < a[0].length; k++) {
+            result[i][j] += a[i][k] * b[k][j];
+          }
+        }
+      }
+      return result;
+    }
+
+    function inverse(matrix) {
+      const size = matrix.length;
+      const I = Array(size).fill(0).map((_, i) =>
+        Array(size).fill(0).map((_, j) => (i === j ? 1 : 0))
+      );
+      const M = matrix.map(row => row.slice());
+
+      for (let i = 0; i < size; i++) {
+        let factor = M[i][i];
+        if (factor === 0) throw new Error("행렬이 역행렬을 가질 수 없습니다.");
+        for (let j = 0; j < size; j++) {
+          M[i][j] /= factor;
+          I[i][j] /= factor;
+        }
+        for (let k = 0; k < size; k++) {
+          if (k !== i) {
+            const factor = M[k][i];
+            for (let j = 0; j < size; j++) {
+              M[k][j] -= factor * M[i][j];
+              I[k][j] -= factor * I[i][j];
+            }
+          }
+        }
+      }
+
+      return I;
+    }
+
+    function linearRegression(X, Y) {
+      const XT = transpose(X);
+      const XTX = multiply(XT, X);
+      const XTX_inv = inverse(XTX);
+      const XTY = multiply(XT, Y);
+      const W = multiply(XTX_inv, XTY);
+      return W;
+    }
+
+    function predict(x1, x2, coefficients) {
+      const x = [1, x1, x2, x1 ** 2, x1 * x2, x2 ** 2];
+      const y = [];
+      for (let col = 0; col < coefficients[0].length; col++) {
+        let val = 0;
+        for (let row = 0; row < x.length; row++) {
+          val += x[row] * coefficients[row][col];
+        }
+        y.push(val);
+      }
+      return [y[0], y[1]];
+    }
+
+    function runInverseRegression() {
+      const y1 = parseFloat(document.getElementById("target_tube1").value);
+      const y2 = parseFloat(document.getElementById("target_tube2").value);
+
+      if (isNaN(y1) || isNaN(y2)) {
+        alert("예상 유량 값을 정확히 입력해주세요.");
+        return;
+      }
+
+      const X = tenSecMappData.map(row => [row[0], row[1]]);
+      const Y = tenSecMappData.map(row => [row[2], row[3], row[4]]);
+      const X_poly = transformPoly(X);
+      const coefficients = linearRegression(X_poly, Y);
+
+      let candidates = [];
+      for (let x1 = 100; x1 <= 450; x1 += 1) {
+        for (let x2 = 100; x2 <= 450; x2 += 1) {
+          const [pred1, pred2] = predict(x1, x2, coefficients);
+          const diff1 = Math.abs(pred1 - y1);
+          const diff2 = Math.abs(pred2 - y2);
+
+          if (diff1 < 0.03 && diff2 < 0.03) {
+            candidates.push({ x1, x2, pred1, pred2 });
+          }
+        }
+      }
+
+      const output = document.getElementById("inverse_output");
+      output.innerHTML = "";
+
+      if (candidates.length === 0) {
+        output.innerHTML = "<li>조건에 맞는 조합을 찾을 수 없습니다.</li>";
+      } else {
+        candidates.forEach(({ x1, x2, pred1, pred2 }) => {
+          const li = document.createElement("li");
+          li.textContent = `튜브 압력: x1=${x1}, x2=${x2} → 예측: (${pred1.toFixed(3)}, ${pred2.toFixed(3)})`;
+          output.appendChild(li);
+        });
+      }
+    }
+  </script>
+</body
