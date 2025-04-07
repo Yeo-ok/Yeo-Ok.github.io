@@ -70,7 +70,7 @@
     </div>
     <div class="input-field">
         <label for="time">시간</label>
-        <input type="number" id="time" placeholder="시간 초를 입력하세요요">
+        <input type="number" id="time" placeholder="시간 초를 입력하세요">
     </div>
     <button class="button" onclick="runLinearRegression(), runLinearRegression_4_1(), runLinearRegression_4_2(), showResult()">예상 유량값 보기</button>
     <div class="output" id="output"></div>
@@ -462,14 +462,14 @@ function showResult() {
     const tube_2_predict = tube_2_predict_10s * times * (tube_2_predict_percent / 100);
     
     document.getElementById("output").innerHTML = `
-        tube_1_predict_10s: ${tube_1_predict_10s}mL<br>
-        tube_2_predict_10s: ${tube_2_predict_10s}mL<br>
-        tube_1_predict_percent: ${tube_1_predict_percent}%<br>
-        tube_2_predict_percent: ${tube_2_predict_percent}%<br>
-        예상 1번 튜브 토출량 : ${tube_1_predict.toFixed(3)}mL<br>
-        예상 2번 튜브 토출량 : ${tube_2_predict.toFixed(3)}mL<br>
-        예상 1번 튜브 토출량 범위 : ${(tube_1_predict - 0.06).toFixed(3)}mL ~ ${(tube_1_predict + 0.06).toFixed(3)}mL<br>
-        예상 2번 튜브 토출량 범위 : ${(tube_2_predict - 0.06).toFixed(3)}mL ~ ${(tube_2_predict + 0.06).toFixed(3)}mL<br>
+        1번 튜브 토출량 10초 예측: ${tube_1_predict_10s}mL<br>
+        2번 튜브 토출량 10초 예측: ${tube_2_predict_10s}mL<br>
+        1번 튜브 토출량 퍼센트 예측: ${tube_1_predict_percent}%<br>
+        2번 튜브 토출량 퍼센트 예측측: ${tube_2_predict_percent}%<br>
+        [최종] 예상 1번 튜브 토출량 : ${tube_1_predict.toFixed(3)}mL<br>
+        [최종] 예상 2번 튜브 토출량 : ${tube_2_predict.toFixed(3)}mL<br>
+        // [최종] 1-> 0.06mL 범위 : ${(tube_1_predict - 0.06).toFixed(3)}mL ~ ${(tube_1_predict + 0.06).toFixed(3)}mL<br>
+        // [최종] 2 0.06mL 범위 : ${(tube_2_predict - 0.06).toFixed(3)}mL ~ ${(tube_2_predict + 0.06).toFixed(3)}mL<br>
     `;
 }
 
